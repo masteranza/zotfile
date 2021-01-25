@@ -152,13 +152,27 @@ Zotero.ZotFile.pdfAnnotations = new function() {
     this.createNote = Zotero.Promise.coroutine(function* (annotations, item, att, method) {
         // get note content
         var note_content = this.getNoteContent(annotations, item, att, method);
+        // get existing notes
+        parent_notes = item.getNotes().filter(id => Zotero.Items.get(id).getNote().includes('Extracted Annotations'));
+
         // save single note
         if(typeof note_content == 'string') {
-            let note = new Zotero.Item('note');
-            note.libraryID = item.libraryID;
-            note.setNote(note_content);
-            note.parentKey = item.key;
-            yield note.saveTx();
+            if (parent_notes.length>0)
+            {
+                //overwrite first (consider removing the rest!)
+                let note = Zotero.Items.get(parent_notes[0]);
+                note.setNote(note_content);
+                yield note.saveTx();
+            }
+            else
+            {
+                //create new
+                let note = new Zotero.Item('note');
+                note.libraryID = item.libraryID;
+                note.setNote(note_content);
+                note.parentKey = item.key;
+                yield note.saveTx();
+            }
         }
         // save multiple notes
         else {
